@@ -1,0 +1,31 @@
+version: "3"
+services:
+  front-end:
+    image: front-end
+    stdin_open: true
+    ports: 
+      - "3000:3000"
+    networks:
+      - connector-app
+  back-end:
+    image: back-end
+    ports:
+      - "5000:5000"
+    networks:
+      - connector-app
+    depends_on:
+      - mongo
+  mongo:
+    image: mongo:3.6.19-xenial
+    ports:
+      - "27017:27017"
+    networks:
+      - connector-app
+    volumes:
+      - mongo-data:/data/db # /var/lib/docker/volumes/docker-todo-mern_mongo-data/_data/
+networks:
+  connector-app:
+    driver: bridge
+volumes:
+  mongo-data:
+    driver: local
