@@ -1,16 +1,29 @@
-# pull the base image
-FROM node:14-slim
+# Use a smaller base image
+FROM node:14-alpine AS builder
 
-# set the working direction
-WORKDIR /usr/src/app2
+# Set working directory
+WORKDIR /usr/src/app
 
+# Copy only package.json and package-lock.json (if available) to leverage Docker caching
 COPY package*.json ./
 
-RUN npm install
+# Install dependencies using production flag to reduce image size
+RUN npm ci --only=production
 
-# add app
+# Copy application source code
 COPY . .
 
+# Use a minimal runtime image
+FROM node:14-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy dependencies and built application from the builder stage
+COPY --from=builder /usr/src/app .
+
+# Expose port
 EXPOSE 3000
-# start app
+
+# Start application
 CMD ["npm", "start"]
