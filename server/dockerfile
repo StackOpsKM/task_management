@@ -1,20 +1,29 @@
-FROM node:14-slim
+# Use a smaller base image
+FROM node:14-alpine AS builder
 
-# Create app directory
-WORKDIR /usr/src/app2
+# Set working directory
+WORKDIR /usr/src/app
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
+# Copy package files first to leverage Docker caching
 COPY package*.json ./
 
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
+# Install dependencies (only production dependencies for smaller image)
+RUN npm ci --only=production
 
-# Bundle app source
+# Copy application source code
 COPY . .
 
+# Use a minimal runtime image
+FROM node:14-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy dependencies and built application from the builder stage
+COPY --from=builder /usr/src/app .
+
+# Expose application port
 EXPOSE 5000
 
-CMD [ "npm", "start" ]
+# Start the application
+CMD ["npm", "start"]
