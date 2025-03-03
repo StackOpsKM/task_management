@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build, Scan, and Push Docker Image
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   push_to_docker_hub:
-    name: Build and Push Docker Image
+    name: Build, Scan, and Push Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -20,11 +20,41 @@ jobs:
       - name: Build Front End Image
         run: docker build -t ${{ secrets.DOCKER_USERNAME }}/front-end:latest ./client/
 
+      - name: Scan Front End Image with Trivy (SARIF Report)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKER_USERNAME }}/front-end:latest'
+          format: 'sarif'
+          output: 'trivy-results-front.sarif'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+
+      - name: Upload Trivy Report to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results-front.sarif'
+
       - name: Push Front End Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/front-end:latest
 
       - name: Build Back End Image
-        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/front-end:latest ./server/
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/back-end:latest ./server/
+
+      - name: Scan Back End Image with Trivy (SARIF Report)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ secrets.DOCKER_USERNAME }}/back-end:latest'
+          format: 'sarif'
+          output: 'trivy-results-back.sarif'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+
+      - name: Upload Trivy Report to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results-back.sarif'
 
       - name: Push Back End Image
-        run: docker push ${{ secrets.DOCKER_USERNAME }}/front-end:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/back-end:latest
