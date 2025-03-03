@@ -5,6 +5,10 @@ on:
     branches:
       - main  # Runs on push to main branch
 
+permissions:
+  contents: read
+  security-events: write  # Required for SARIF upload
+
 jobs:
   push_to_docker_hub:
     name: Build, Scan, and Push Docker Image
@@ -31,9 +35,10 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
 
       - name: Upload Trivy Report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results-front.sarif'
+          category: 'trivy-front-end'
 
       - name: Push Front End Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/front-end:latest
@@ -52,9 +57,10 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM,LOW'
 
       - name: Upload Trivy Report to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results-back.sarif'
+          category: 'trivy-back-end'
 
       - name: Push Back End Image
         run: docker push ${{ secrets.DOCKER_USERNAME }}/back-end:latest
